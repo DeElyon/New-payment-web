@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast"
 import PaymentTimer from "@/components/payment-timer"
 import { useExchangeRate } from "@/hooks/use-exchange-rate"
 import { usePayment } from "@/context/payment-context"
-import { Loader } from "@/components/ui/loader"
+import { AnimatedLoader } from "@/components/ui/animated-loader"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { PaymentMethod, BankAccount, CryptoNetwork, PaymentStatus } from "@/types/payment"
 import { createPayment, verifyPayment } from "@/lib/payment-service"
@@ -329,14 +329,16 @@ export default function PaymentForm() {
   }
 
   return (
-    <Card className="w-full animate-in">
-      <CardHeader>
-        <CardTitle>Payment Portal</CardTitle>
-        <CardDescription>Make a payment to ELCODERS SOFTWARE DEVELOPING COMPANY</CardDescription>
+    <Card className="w-full animate-in bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-blue-950 border-2 border-blue-200 dark:border-blue-800">
+      <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+        <CardTitle className="text-2xl font-bold">Payment Portal</CardTitle>
+        <CardDescription className="text-blue-100">
+          Make a payment to ELCODERS SOFTWARE DEVELOPING COMPANY
+        </CardDescription>
 
         {/* Offline indicator */}
         {!isOnline && (
-          <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+          <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 mt-4">
             <WifiOff className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
               <span>You are currently offline. Actions will be queued until connection is restored.</span>
@@ -350,7 +352,7 @@ export default function PaymentForm() {
 
         {/* Session recovery indicator */}
         {sessionRecovered && (
-          <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+          <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 mt-4">
             <AlertDescription>
               Your previous payment session has been restored. You can continue where you left off.
             </AlertDescription>
@@ -360,7 +362,7 @@ export default function PaymentForm() {
         {/* Progressive enhancement fallback */}
         {!hasJavaScript && (
           <noscript>
-            <Alert className="border-yellow-200 bg-yellow-50">
+            <Alert className="border-yellow-200 bg-yellow-50 mt-4">
               <AlertDescription>
                 JavaScript is disabled. Some features may not work properly. Please enable JavaScript for the best
                 experience.
@@ -369,14 +371,14 @@ export default function PaymentForm() {
           </noscript>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         {!paymentStarted ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="grid gap-4">
               <div className="space-y-2">
-                <Label>Select Amount</Label>
+                <Label className="text-lg font-semibold text-blue-700 dark:text-blue-300">Select Amount</Label>
                 <Select value={selectedPreset || ""} onValueChange={handlePresetAmountChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-2 border-blue-300 focus:border-blue-500">
                     <SelectValue placeholder="Choose a predefined amount" />
                   </SelectTrigger>
                   <SelectContent>
@@ -390,20 +392,22 @@ export default function PaymentForm() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="amount">Custom Amount (NGN)</Label>
+                <Label htmlFor="amount" className="text-lg font-semibold text-blue-700 dark:text-blue-300">
+                  Custom Amount (NGN)
+                </Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2">₦</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600 font-bold">₦</span>
                   <Input
                     id="amount"
                     name="amount"
-                    className="pl-8"
+                    className="pl-8 border-2 border-blue-300 focus:border-blue-500"
                     placeholder="Enter amount in Naira"
                     value={formData.amount}
                     onChange={handleInputChange}
                   />
                 </div>
                 {formData.amount && !isNaN(Number(formData.amount)) && (
-                  <div className="text-sm text-muted-foreground flex items-center">
+                  <div className="text-sm text-green-600 dark:text-green-400 flex items-center font-medium">
                     <DollarSign className="h-3 w-3 mr-1" />
                     <span>USD Equivalent: ${calculateUsdAmount(formData.amount)}</span>
                   </div>
@@ -411,10 +415,13 @@ export default function PaymentForm() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name" className="text-lg font-semibold text-blue-700 dark:text-blue-300">
+                  Full Name
+                </Label>
                 <Input
                   id="name"
                   name="name"
+                  className="border-2 border-blue-300 focus:border-blue-500"
                   placeholder="Enter your full name"
                   value={formData.name}
                   onChange={handleInputChange}
@@ -422,11 +429,14 @@ export default function PaymentForm() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-lg font-semibold text-blue-700 dark:text-blue-300">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
+                  className="border-2 border-blue-300 focus:border-blue-500"
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={handleInputChange}
@@ -435,34 +445,53 @@ export default function PaymentForm() {
             </div>
 
             <Tabs defaultValue="bank" onValueChange={(value) => handlePaymentMethodChange(value as PaymentMethod)}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="bank">Bank Transfer</TabsTrigger>
-                <TabsTrigger value="crypto">Cryptocurrency</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-blue-100 dark:bg-blue-900">
+                <TabsTrigger value="bank" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                  Bank Transfer
+                </TabsTrigger>
+                <TabsTrigger
+                  value="crypto"
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
+                  Cryptocurrency
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="bank" className="space-y-4 pt-4">
                 <RadioGroup
                   defaultValue="access"
                   onValueChange={(value) => handleBankAccountChange(value as BankAccount)}
                 >
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                  <div className="flex items-center space-x-2 border-2 border-green-300 rounded-md p-3 bg-green-50 dark:bg-green-950/20">
                     <RadioGroupItem value="access" id="access" />
                     <Label htmlFor="access" className="flex-1">
-                      <div className="font-medium">ACCESS BANK</div>
-                      <div className="text-sm text-muted-foreground">1907856695</div>
-                      <div className="text-sm text-muted-foreground">EBUBECHUKWU IFEANYI ELIJAH</div>
+                      <div className="font-medium text-green-700 dark:text-green-300">ACCESS BANK</div>
+                      <div className="text-sm text-green-600 dark:text-green-400">1907856695</div>
+                      <div className="text-sm text-green-600 dark:text-green-400">EBUBECHUKWU IFEANYI ELIJAH</div>
                     </Label>
-                    <Button variant="ghost" size="icon" onClick={() => handleCopy("1907856695", "Account number")}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleCopy("1907856695", "Account number")}
+                      className="text-green-600 hover:text-green-700"
+                    >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                  <div className="flex items-center space-x-2 border-2 border-orange-300 rounded-md p-3 bg-orange-50 dark:bg-orange-950/20">
                     <RadioGroupItem value="smartcash" id="smartcash" />
                     <Label htmlFor="smartcash" className="flex-1">
-                      <div className="font-medium">SMARTCASH PAYMENT SERVICE BANK</div>
-                      <div className="text-sm text-muted-foreground">8088578817</div>
-                      <div className="text-sm text-muted-foreground">IFEANYI ONUOHA</div>
+                      <div className="font-medium text-orange-700 dark:text-orange-300">
+                        SMARTCASH PAYMENT SERVICE BANK
+                      </div>
+                      <div className="text-sm text-orange-600 dark:text-orange-400">8088578817</div>
+                      <div className="text-sm text-orange-600 dark:text-orange-400">IFEANYI ONUOHA</div>
                     </Label>
-                    <Button variant="ghost" size="icon" onClick={() => handleCopy("8088578817", "Account number")}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleCopy("8088578817", "Account number")}
+                      className="text-orange-600 hover:text-orange-700"
+                    >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
@@ -473,25 +502,28 @@ export default function PaymentForm() {
                   defaultValue="trc20"
                   onValueChange={(value) => handleCryptoNetworkChange(value as CryptoNetwork)}
                 >
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                  <div className="flex items-center space-x-2 border-2 border-purple-300 rounded-md p-3 bg-purple-50 dark:bg-purple-950/20">
                     <RadioGroupItem value="trc20" id="trc20" />
                     <Label htmlFor="trc20" className="flex-1">
-                      <div className="font-medium">USDT (TRC20)</div>
-                      <div className="text-sm text-muted-foreground truncate">TV8rxyuDHeyrBGMzc8bvbrbfDTH4MMEmNh</div>
+                      <div className="font-medium text-purple-700 dark:text-purple-300">USDT (TRC20)</div>
+                      <div className="text-sm text-purple-600 dark:text-purple-400 truncate">
+                        TV8rxyuDHeyrBGMzc8bvbrbfDTH4MMEmNh
+                      </div>
                     </Label>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleCopy("TV8rxyuDHeyrBGMzc8bvbrbfDTH4MMEmNh", "TRC20 address")}
+                      className="text-purple-600 hover:text-purple-700"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                  <div className="flex items-center space-x-2 border-2 border-indigo-300 rounded-md p-3 bg-indigo-50 dark:bg-indigo-950/20">
                     <RadioGroupItem value="erc20" id="erc20" />
                     <Label htmlFor="erc20" className="flex-1">
-                      <div className="font-medium">USDT (ERC20)</div>
-                      <div className="text-sm text-muted-foreground truncate">
+                      <div className="font-medium text-indigo-700 dark:text-indigo-300">USDT (ERC20)</div>
+                      <div className="text-sm text-indigo-600 dark:text-indigo-400 truncate">
                         0xe05fdb4e9b96386c4a1cb506b53c032ebe5a9f4a
                       </div>
                     </Label>
@@ -499,15 +531,16 @@ export default function PaymentForm() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleCopy("0xe05fdb4e9b96386c4a1cb506b53c032ebe5a9f4a", "ERC20 address")}
+                      className="text-indigo-600 hover:text-indigo-700"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                  <div className="flex items-center space-x-2 border-2 border-cyan-300 rounded-md p-3 bg-cyan-50 dark:bg-cyan-950/20">
                     <RadioGroupItem value="ton" id="ton" />
                     <Label htmlFor="ton" className="flex-1">
-                      <div className="font-medium">USDT (TON)</div>
-                      <div className="text-sm text-muted-foreground truncate">
+                      <div className="font-medium text-cyan-700 dark:text-cyan-300">USDT (TON)</div>
+                      <div className="text-sm text-cyan-600 dark:text-cyan-400 truncate">
                         UQCK6tTHarFlr3l1X71HMGRzJUJuvHTaGaAqncivV6GJQI4J
                       </div>
                     </Label>
@@ -515,15 +548,16 @@ export default function PaymentForm() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleCopy("UQCK6tTHarFlr3l1X71HMGRzJUJuvHTaGaAqncivV6GJQI4J", "TON address")}
+                      className="text-cyan-600 hover:text-cyan-700"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                  <div className="flex items-center space-x-2 border-2 border-yellow-300 rounded-md p-3 bg-yellow-50 dark:bg-yellow-950/20">
                     <RadioGroupItem value="bep20" id="bep20" />
                     <Label htmlFor="bep20" className="flex-1">
-                      <div className="font-medium">USDT (BEP20)</div>
-                      <div className="text-sm text-muted-foreground truncate">
+                      <div className="font-medium text-yellow-700 dark:text-yellow-300">USDT (BEP20)</div>
+                      <div className="text-sm text-yellow-600 dark:text-yellow-400 truncate">
                         0xe05fdb4e9b96386c4a1cb506b53c032ebe5a9f4a
                       </div>
                     </Label>
@@ -531,6 +565,7 @@ export default function PaymentForm() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleCopy("0xe05fdb4e9b96386c4a1cb506b53c032ebe5a9f4a", "BEP20 address")}
+                      className="text-yellow-600 hover:text-yellow-700"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -546,41 +581,45 @@ export default function PaymentForm() {
             </div>
 
             <div className="space-y-4">
-              <div className="border rounded-md p-4 space-y-2">
+              <div className="border-2 border-blue-300 rounded-md p-4 space-y-2 bg-blue-50 dark:bg-blue-950/20">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Amount:</span>
-                  <span className="font-medium">₦{Number(formData.amount).toLocaleString()}</span>
+                  <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">Amount:</span>
+                  <span className="font-bold text-blue-700 dark:text-blue-300">
+                    ₦{Number(formData.amount).toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">USD Equivalent:</span>
-                  <span className="font-medium">${calculateUsdAmount(formData.amount)}</span>
+                  <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">USD Equivalent:</span>
+                  <span className="font-bold text-green-600 dark:text-green-400">
+                    ${calculateUsdAmount(formData.amount)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Reference:</span>
-                  <span className="font-medium">{formData.reference}</span>
+                  <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">Reference:</span>
+                  <span className="font-bold text-purple-600 dark:text-purple-400">{formData.reference}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Payment Method:</span>
-                  <span className="font-medium capitalize">
+                  <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">Payment Method:</span>
+                  <span className="font-bold text-orange-600 dark:text-orange-400 capitalize">
                     {formData.paymentMethod === "bank" ? "Bank Transfer" : "Cryptocurrency"}
                   </span>
                 </div>
               </div>
 
               {formData.paymentMethod === "bank" && (
-                <div className="border rounded-md p-4 space-y-2">
-                  <div className="font-medium">
+                <div className="border-2 border-green-300 rounded-md p-4 space-y-2 bg-green-50 dark:bg-green-950/20">
+                  <div className="font-bold text-green-700 dark:text-green-300">
                     {formData.bankAccount === "access" ? "ACCESS BANK" : "SMARTCASH PAYMENT SERVICE BANK"}
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Account Number:</span>
-                    <span className="font-medium">
+                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">Account Number:</span>
+                    <span className="font-bold text-green-700 dark:text-green-300">
                       {formData.bankAccount === "access" ? "1907856695" : "8088578817"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Account Name:</span>
-                    <span className="font-medium">
+                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">Account Name:</span>
+                    <span className="font-bold text-green-700 dark:text-green-300">
                       {formData.bankAccount === "access" ? "EBUBECHUKWU IFEANYI ELIJAH" : "IFEANYI ONUOHA"}
                     </span>
                   </div>
@@ -588,9 +627,11 @@ export default function PaymentForm() {
               )}
 
               {formData.paymentMethod === "crypto" && (
-                <div className="border rounded-md p-4 space-y-2">
-                  <div className="font-medium">USDT ({formData.cryptoNetwork?.toUpperCase()})</div>
-                  <div className="break-all text-sm">
+                <div className="border-2 border-purple-300 rounded-md p-4 space-y-2 bg-purple-50 dark:bg-purple-950/20">
+                  <div className="font-bold text-purple-700 dark:text-purple-300">
+                    USDT ({formData.cryptoNetwork?.toUpperCase()})
+                  </div>
+                  <div className="break-all text-sm font-mono text-purple-600 dark:text-purple-400">
                     {formData.cryptoNetwork === "trc20" && "TV8rxyuDHeyrBGMzc8bvbrbfDTH4MMEmNh"}
                     {formData.cryptoNetwork === "erc20" && "0xe05fdb4e9b96386c4a1cb506b53c032ebe5a9f4a"}
                     {formData.cryptoNetwork === "ton" && "UQCK6tTHarFlr3l1X71HMGRzJUJuvHTaGaAqncivV6GJQI4J"}
@@ -601,54 +642,76 @@ export default function PaymentForm() {
 
               {!timerExpired && (
                 <div className="space-y-2">
-                  <Label htmlFor="transactionId">Transaction ID / Reference</Label>
+                  <Label htmlFor="transactionId" className="text-lg font-semibold text-blue-700 dark:text-blue-300">
+                    Transaction ID / Reference
+                  </Label>
                   <Input
                     id="transactionId"
                     name="transactionId"
+                    className="border-2 border-blue-300 focus:border-blue-500"
                     placeholder="Enter your transaction ID or reference"
                     value={formData.transactionId}
                     onChange={handleInputChange}
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
                     Enter the transaction ID or reference from your bank transfer or cryptocurrency transaction
                   </p>
                 </div>
               )}
 
               {timerExpired ? (
-                <div className="flex items-center justify-center p-4 border border-destructive rounded-md bg-destructive/10 text-destructive">
+                <div className="flex items-center justify-center p-4 border-2 border-red-300 rounded-md bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300">
                   <AlertCircle className="h-5 w-5 mr-2" />
-                  <span>Payment session expired. Please start again.</span>
+                  <span className="font-medium">Payment session expired. Please start again.</span>
                 </div>
               ) : (
-                <div className="flex items-center justify-center p-4 border border-primary rounded-md bg-primary/10">
-                  <Clock className="h-5 w-5 mr-2 text-primary" />
-                  <span>Please complete your payment within the time limit</span>
+                <div className="flex items-center justify-center p-4 border-2 border-blue-300 rounded-md bg-blue-50 dark:bg-blue-950/20">
+                  <Clock className="h-5 w-5 mr-2 text-blue-600" />
+                  <span className="text-blue-700 dark:text-blue-300 font-medium">
+                    Please complete your payment within the time limit
+                  </span>
                 </div>
               )}
             </div>
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between bg-gray-50 dark:bg-gray-800 rounded-b-lg p-6">
         {!paymentStarted ? (
           <>
-            <Button variant="outline" onClick={() => window.location.reload()}>
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+              className="border-2 border-gray-300 hover:border-gray-400"
+            >
               Cancel
             </Button>
-            <Button onClick={startPayment} disabled={!isOnline && !hasJavaScript}>
+            <Button
+              onClick={startPayment}
+              disabled={!isOnline && !hasJavaScript}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold"
+            >
               Proceed to Payment
             </Button>
           </>
         ) : (
           <>
-            <Button variant="outline" onClick={() => window.location.reload()} disabled={verifying}>
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+              disabled={verifying}
+              className="border-2 border-gray-300 hover:border-gray-400"
+            >
               Cancel
             </Button>
-            <Button onClick={completePayment} disabled={timerExpired || verifying || !formData.transactionId}>
+            <Button
+              onClick={completePayment}
+              disabled={timerExpired || verifying || !formData.transactionId}
+              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-bold"
+            >
               {verifying ? (
                 <>
-                  <Loader size="sm" className="mr-2" /> Verifying Payment
+                  <AnimatedLoader size="sm" className="mr-2" /> Verifying Payment
                 </>
               ) : (
                 "Verify Payment"

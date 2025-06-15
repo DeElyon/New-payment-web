@@ -12,7 +12,7 @@ if (typeof window !== "undefined") {
       payments = JSON.parse(savedPayments)
     }
   } catch (error) {
-    console.warn("Failed to load payments from localStorage (this may be due to service worker issues):", error)
+    console.error("Failed to load payments from localStorage:", error)
     payments = []
   }
 }
@@ -23,8 +23,7 @@ const savePayments = () => {
     try {
       localStorage.setItem("payments", JSON.stringify(payments))
     } catch (error) {
-      console.warn("Failed to save payments to localStorage (this may be due to service worker issues):", error)
-      // Continue without saving - the app will still work in memory
+      console.error("Failed to save payments to localStorage:", error)
     }
   }
 }
