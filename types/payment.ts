@@ -1,5 +1,5 @@
 export type PaymentMethod = "bank" | "crypto"
-export type BankAccount = "access" | "stanbic"
+export type BankAccount = "access" | "smartcash"
 export type CryptoNetwork = "trc20" | "erc20" | "ton" | "bep20"
 export type PaymentStatus = "pending" | "completed" | "failed"
 

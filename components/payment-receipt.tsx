@@ -100,7 +100,7 @@ export default function PaymentReceipt({ paymentDetails, countdown }: PaymentRec
                   <span>Payment Method</span>
                   <span className="font-medium capitalize">
                     {paymentDetails.paymentMethod === "bank"
-                      ? `Bank Transfer (${paymentDetails.bankAccount === "access" ? "ACCESS BANK" : "Stanbic IBTC"})`
+                      ? `Bank Transfer (${paymentDetails.bankAccount === "access" ? "ACCESS BANK" : "SMARTCASH PAYMENT SERVICE BANK"})`
                       : `Cryptocurrency (USDT ${paymentDetails.cryptoNetwork?.toUpperCase()})`}
                   </span>
                 </div>

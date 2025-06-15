@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Copy, Clock, AlertCircle, DollarSign } from "lucide-react"
+import { Copy, Clock, AlertCircle, DollarSign, WifiOff, RefreshCw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import PaymentTimer from "@/components/payment-timer"
 import { useExchangeRate } from "@/hooks/use-exchange-rate"
@@ -19,12 +19,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { PaymentMethod, BankAccount, CryptoNetwork, PaymentStatus } from "@/types/payment"
 import { createPayment, verifyPayment } from "@/lib/payment-service"
 import { predefinedAmounts } from "@/lib/constants"
+import { useOfflineSupport } from "@/hooks/use-offline-support"
+import { useSessionRecovery } from "@/hooks/use-session-recovery"
+import { useErrorReporting } from "@/hooks/use-error-reporting"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function PaymentForm() {
   const { toast } = useToast()
   const router = useRouter()
   const { rate } = useExchangeRate()
   const { addPayment } = usePayment()
+  const { isOnline, queueOfflineAction } = useOfflineSupport()
+  const { saveSession, recoverSession, clearSession } = useSessionRecovery()
+  const { reportError } = useErrorReporting()
 
   const [formData, setFormData] = useState({
     amount: "",
@@ -42,19 +49,88 @@ export default function PaymentForm() {
   const [timerExpired, setTimerExpired] = useState(false)
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const [paymentId, setPaymentId] = useState<string | null>(null)
+  const [sessionRecovered, setSessionRecovered] = useState(false)
+
+  // Progressive enhancement check
+  const [hasJavaScript, setHasJavaScript] = useState(false)
+  const [supportsClipboard, setSupportsClipboard] = useState(false)
+
+  // Initialize progressive enhancement features
+  useEffect(() => {
+    setHasJavaScript(true)
+    setSupportsClipboard(!!navigator.clipboard)
+  }, [])
+
+  // Session recovery on component mount
+  useEffect(() => {
+    const recovered = recoverSession()
+    if (recovered) {
+      setFormData(recovered.formData)
+      setPaymentStarted(recovered.paymentStarted)
+      setPaymentId(recovered.paymentId)
+      setSelectedPreset(recovered.selectedPreset)
+      setSessionRecovered(true)
+
+      toast({
+        title: "Session recovered",
+        description: "Your previous payment session has been restored",
+      })
+    }
+  }, [recoverSession, toast])
+
+  // Auto-save session data
+  useEffect(() => {
+    if (paymentStarted || formData.amount || formData.email || formData.name) {
+      saveSession({
+        formData,
+        paymentStarted,
+        paymentId,
+        selectedPreset,
+        timestamp: Date.now(),
+      })
+    }
+  }, [formData, paymentStarted, paymentId, selectedPreset, saveSession])
 
   // Generate a random reference number
   useEffect(() => {
-    const reference = `ELC-${Math.floor(Math.random() * 1000000)}`
-    setFormData((prev) => ({ ...prev, reference }))
-  }, [])
+    if (!formData.reference) {
+      const reference = `ELC-${Math.floor(Math.random() * 1000000)}`
+      setFormData((prev) => ({ ...prev, reference }))
+    }
+  }, [formData.reference])
 
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text)
-    toast({
-      title: "Copied!",
-      description: `${label} copied to clipboard`,
-    })
+  const handleCopy = async (text: string, label: string) => {
+    try {
+      if (supportsClipboard) {
+        await navigator.clipboard.writeText(text)
+        toast({
+          title: "Copied!",
+          description: `${label} copied to clipboard`,
+        })
+      } else {
+        // Fallback for browsers without clipboard API
+        const textArea = document.createElement("textarea")
+        textArea.value = text
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textArea)
+
+        toast({
+          title: "Copied!",
+          description: `${label} copied to clipboard`,
+        })
+      }
+    } catch (error) {
+      reportError(error as Error, { context: "clipboard_copy", text, label })
+
+      // Manual copy fallback
+      toast({
+        title: "Copy failed",
+        description: `Please manually copy: ${text}`,
+        variant: "destructive",
+      })
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,6 +174,26 @@ export default function PaymentForm() {
     }
 
     try {
+      if (!isOnline) {
+        // Queue action for when online
+        queueOfflineAction({
+          type: "CREATE_PAYMENT",
+          data: {
+            ...formData,
+            amount: formData.amount,
+            status: "pending" as PaymentStatus,
+            date: new Date().toISOString(),
+            exchangeRate: rate,
+          },
+        })
+
+        toast({
+          title: "Offline mode",
+          description: "Payment will be processed when connection is restored",
+        })
+        return
+      }
+
       const payment = await createPayment({
         ...formData,
         amount: formData.amount,
@@ -109,8 +205,14 @@ export default function PaymentForm() {
       // Store the payment ID for later use
       setPaymentId(payment.id)
 
-      // Add payment to context
-      addPayment(payment)
+      // Add payment to context with error handling
+      try {
+        addPayment(payment)
+      } catch (contextError) {
+        reportError(contextError as Error, { context: "payment_context_update" })
+        console.warn("Context update failed, continuing with payment:", contextError)
+      }
+
       setPaymentStarted(true)
 
       toast({
@@ -118,6 +220,7 @@ export default function PaymentForm() {
         description: "You have 15 minutes to complete your payment",
       })
     } catch (error) {
+      reportError(error as Error, { context: "create_payment", formData })
       console.error("Error creating payment:", error)
       toast({
         title: "Error",
@@ -149,6 +252,28 @@ export default function PaymentForm() {
     setVerifying(true)
 
     try {
+      if (!isOnline) {
+        // Queue action for when online
+        queueOfflineAction({
+          type: "VERIFY_PAYMENT",
+          data: {
+            id: paymentId,
+            ...formData,
+            amount: formData.amount,
+            status: "completed" as PaymentStatus,
+            date: new Date().toISOString(),
+            exchangeRate: rate,
+          },
+        })
+
+        toast({
+          title: "Offline mode",
+          description: "Payment verification will be processed when connection is restored",
+        })
+        setVerifying(false)
+        return
+      }
+
       const verifiedPayment = await verifyPayment({
         id: paymentId,
         ...formData,
@@ -160,6 +285,9 @@ export default function PaymentForm() {
 
       addPayment(verifiedPayment)
 
+      // Clear session after successful payment
+      clearSession()
+
       toast({
         title: "Payment verified",
         description: "Your payment has been successfully verified",
@@ -168,6 +296,7 @@ export default function PaymentForm() {
       // Redirect to receipt page
       router.push(`/receipt/${verifiedPayment.id}`)
     } catch (error) {
+      reportError(error as Error, { context: "verify_payment", paymentId, formData })
       console.error("Error verifying payment:", error)
       toast({
         title: "Verification failed",
@@ -181,6 +310,7 @@ export default function PaymentForm() {
 
   const handleTimerExpired = () => {
     setTimerExpired(true)
+    clearSession() // Clear expired session
     toast({
       title: "Time expired",
       description: "Your payment session has expired. Please start a new payment.",
@@ -194,11 +324,50 @@ export default function PaymentForm() {
     return usdValue.toFixed(2)
   }
 
+  const retryConnection = () => {
+    window.location.reload()
+  }
+
   return (
     <Card className="w-full animate-in">
       <CardHeader>
         <CardTitle>Payment Portal</CardTitle>
         <CardDescription>Make a payment to ELCODERS SOFTWARE DEVELOPING COMPANY</CardDescription>
+
+        {/* Offline indicator */}
+        {!isOnline && (
+          <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+            <WifiOff className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>You are currently offline. Actions will be queued until connection is restored.</span>
+              <Button variant="outline" size="sm" onClick={retryConnection}>
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Session recovery indicator */}
+        {sessionRecovered && (
+          <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+            <AlertDescription>
+              Your previous payment session has been restored. You can continue where you left off.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Progressive enhancement fallback */}
+        {!hasJavaScript && (
+          <noscript>
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <AlertDescription>
+                JavaScript is disabled. Some features may not work properly. Please enable JavaScript for the best
+                experience.
+              </AlertDescription>
+            </Alert>
+          </noscript>
+        )}
       </CardHeader>
       <CardContent>
         {!paymentStarted ? (
@@ -287,13 +456,13 @@ export default function PaymentForm() {
                     </Button>
                   </div>
                   <div className="flex items-center space-x-2 border rounded-md p-3">
-                    <RadioGroupItem value="stanbic" id="stanbic" />
-                    <Label htmlFor="stanbic" className="flex-1">
-                      <div className="font-medium">Stanbic IBTC</div>
-                      <div className="text-sm text-muted-foreground">5190766096</div>
-                      <div className="text-sm text-muted-foreground">Ebubechukwu Ifeanyi</div>
+                    <RadioGroupItem value="smartcash" id="smartcash" />
+                    <Label htmlFor="smartcash" className="flex-1">
+                      <div className="font-medium">SMARTCASH PAYMENT SERVICE BANK</div>
+                      <div className="text-sm text-muted-foreground">8088578817</div>
+                      <div className="text-sm text-muted-foreground">IFEANYI ONUOHA</div>
                     </Label>
-                    <Button variant="ghost" size="icon" onClick={() => handleCopy("5190766096", "Account number")}>
+                    <Button variant="ghost" size="icon" onClick={() => handleCopy("8088578817", "Account number")}>
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
@@ -401,18 +570,18 @@ export default function PaymentForm() {
               {formData.paymentMethod === "bank" && (
                 <div className="border rounded-md p-4 space-y-2">
                   <div className="font-medium">
-                    {formData.bankAccount === "access" ? "ACCESS BANK" : "Stanbic IBTC"}
+                    {formData.bankAccount === "access" ? "ACCESS BANK" : "SMARTCASH PAYMENT SERVICE BANK"}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Account Number:</span>
                     <span className="font-medium">
-                      {formData.bankAccount === "access" ? "1907856695" : "5190766096"}
+                      {formData.bankAccount === "access" ? "1907856695" : "8088578817"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Account Name:</span>
                     <span className="font-medium">
-                      {formData.bankAccount === "access" ? "EBUBECHUKWU IFEANYI ELIJAH" : "Ebubechukwu Ifeanyi"}
+                      {formData.bankAccount === "access" ? "EBUBECHUKWU IFEANYI ELIJAH" : "IFEANYI ONUOHA"}
                     </span>
                   </div>
                 </div>
@@ -467,7 +636,9 @@ export default function PaymentForm() {
             <Button variant="outline" onClick={() => window.location.reload()}>
               Cancel
             </Button>
-            <Button onClick={startPayment}>Proceed to Payment</Button>
+            <Button onClick={startPayment} disabled={!isOnline && !hasJavaScript}>
+              Proceed to Payment
+            </Button>
           </>
         ) : (
           <>
