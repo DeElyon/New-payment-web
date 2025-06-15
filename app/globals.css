@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 205 100% 30%;
+    --primary: 200 100% 50%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -22,7 +22,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 205 100% 30%;
+    --ring: 200 100% 50%;
     --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -41,7 +41,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 205 100% 50%;
+    --primary: 200 100% 60%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -53,7 +53,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 205 100% 50%;
+    --ring: 200 100% 60%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 0 0% 98%;
@@ -77,8 +77,8 @@
 .loader {
   width: 48px;
   height: 48px;
-  border: 5px solid hsl(var(--primary) / 0.2);
-  border-bottom-color: hsl(var(--primary));
+  border: 5px solid rgba(0, 212, 255, 0.2);
+  border-bottom-color: #00d4ff;
   border-radius: 50%;
   display: inline-block;
   box-sizing: border-box;
@@ -125,20 +125,64 @@
   }
 }
 
-/* Additional utility classes for better styling */
+/* Cool tech gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #00d4ff 0%, #00ffaa 50%, #a78bfa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+/* Glass effect with cool colors */
 .glass-effect {
   backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.2);
 }
 
+/* Cool tech glow */
 .shadow-glow {
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+/* Neon border animation */
+@keyframes neon-border {
+  0%,
+  100% {
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  }
+  25% {
+    border-color: #00ffaa;
+    box-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+  }
+  50% {
+    border-color: #a78bfa;
+    box-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+  }
+  75% {
+    border-color: #ff6b9d;
+    box-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+  }
+}
+
+.neon-border {
+  animation: neon-border 4s ease-in-out infinite;
+}
+
+/* Pulse animation for status indicators */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
